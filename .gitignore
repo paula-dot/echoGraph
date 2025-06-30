@@ -1,3 +1,7 @@
 .env
 
-.env
+echoGraph
+
+.vscode/
+.idea/
+

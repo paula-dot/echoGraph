@@ -1,12 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	"echoGraph/backend/go_server/handlers"
+
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"github.com/zmb3/spotify"
 )
 
@@ -17,13 +21,14 @@ var (
 	state        = "echograph-state-token"
 	clientID     string
 	clientSecret string
+	db           *sql.DB
 )
 
 func main() {
 	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Warning: .env file not found, relying on env variables")
+		log.Fatal("Error loading .env file")
 	}
 
 	// Get Spotify API credentials from environment variables
@@ -45,6 +50,23 @@ func main() {
 		spotify.ScopeUserTopRead,
 	)
 	auth.SetAuthInfo(clientID, clientSecret)
+
+	// Connect to the database
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("Error: DATABASE_URL must be set in .env or environment variables")
+	}
+	var errDb error
+	db, errDb = sql.Open("postgres", dbURL)
+	if errDb != nil {
+		log.Fatal(errDb)
+	}
+
+	// Ping the database to verify the connection
+	if err := db.Ping(); err != nil {
+		log.Fatal("Error: Could not connect to the database: ", err)
+	}
+	log.Println("Successfully connected to the database!")
 
 	// Define HTTP handlers
 	http.HandleFunc("/callback", completeAuth)
@@ -81,8 +103,11 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 	// Create a new Spotify client
 	client := auth.NewClient(token)
 
+	// Start polling for recently played tracks in the background
+	go handlers.StartPolling(client, db)
+
 	// Send the client to the main goroutine
-	ch <- &client
+	ch <- client
 
 	// Redirect to the frontend
 	http.Redirect(w, r, "/", http.StatusFound)

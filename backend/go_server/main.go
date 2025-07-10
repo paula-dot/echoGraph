@@ -7,7 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"echoGraph/backend/go_server/handlers"
+	"github.com/gorilla/mux"
+	"github.com/paula-dot/echoGraph/backend/go_server/handlers"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -68,13 +69,24 @@ func main() {
 	}
 	log.Println("Successfully connected to the database!")
 
+	r := mux.NewRouter()
+
+	// Example endpoint
+	r.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message":"pong"}`))
+	}).Methods("GET")
+
+	// Example: GET /api/users
+	r.HandleFunc("/api/users", GetUsersHandler).Methods("GET")
+
 	// Define HTTP handlers
 	http.HandleFunc("/callback", completeAuth)
 	http.HandleFunc("/login", loginHandler)
 
 	// Start the HTTP server
 	fmt.Println(">> EchoGraph is running on http://localhost:8080 ...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 // loginHandler redirects the user to Spotify for authentication
@@ -104,11 +116,17 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 	client := auth.NewClient(token)
 
 	// Start polling for recently played tracks in the background
-	go handlers.StartPolling(client, db)
+	go handlers.StartPolling(&client, db)
 
 	// Send the client to the main goroutine
-	ch <- client
+	ch <- &client
 
 	// Redirect to the frontend
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+// Example handler function
+func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: Fetch users from DB and return as JSON
+	w.Write([]byte(`[]`))
 }

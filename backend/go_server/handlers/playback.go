@@ -1,15 +1,12 @@
 package handlers
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"time"
 
-	// Update the import path below to the correct location of your models package.
-	// For example, if your module name is "github.com/yourusername/echoGraph", use:
-	"github.com/Degrante77/echoGraph/backend/go_server/models"
+	"github.com/paula-dot/echoGraph/backend/go_server/models"
 	"github.com/zmb3/spotify"
 )
 
@@ -18,7 +15,7 @@ func StartPolling(client *spotify.Client, db *sql.DB) {
 
 	go func() {
 		for range ticker.C {
-			current, err := client.PlayerCurrentlyPlaying(context.Background())
+			current, err := client.PlayerCurrentlyPlaying()
 			if err != nil {
 				log.Printf("Error getting current playback: %v", err)
 				continue
@@ -26,7 +23,6 @@ func StartPolling(client *spotify.Client, db *sql.DB) {
 
 			if current == nil || !current.Playing || current.Item == nil {
 				continue
-
 			}
 
 			playedAt := time.Now().UTC()

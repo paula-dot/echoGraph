@@ -1,4 +1,4 @@
-module echoGraph/backend/go_server
+module github.com/paula-dot/echoGraph/backend/go_server
 
 go 1.24.4
 
@@ -8,4 +8,8 @@ require (
 	github.com/zmb3/spotify v1.3.0
 )
 
-require golang.org/x/oauth2 v0.30.0 // indirect
+require (
+	github.com/go-chi/chi/v5 v5.2.2 // indirect
+	github.com/gorilla/mux v1.8.1 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
+)
